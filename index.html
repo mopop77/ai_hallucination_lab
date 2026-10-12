@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#101827">
+  <title>AI 거짓말 체험관</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: #121d30;
+      --panel-light: #1a2940;
+      --text: #f3f6fc;
+      --muted: #aab7cb;
+      --accent: #8ce0cf;
+      --accent-dark: #173d3b;
+      --border: #2a3b54;
+      --danger: #ffb4ad;
+      --success: #9ce8b0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #182944 0, var(--bg) 48%);
+      color: var(--text);
+      line-height: 1.65;
+    }
+    button, a { font: inherit; }
+    button { cursor: pointer; }
+    .wrap { width: min(760px, 100%); margin: 0 auto; padding: 24px 18px 48px; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 28px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: -.3px; }
+    .brand-mark {
+      width: 40px; height: 40px; display: grid; place-items: center;
+      border-radius: 13px; background: var(--accent); color: #0b2527; font-size: 21px;
+    }
+    .tag { border: 1px solid var(--border); color: var(--muted); border-radius: 999px; padding: 5px 10px; font-size: 12px; }
+    .screen { display: none; }
+    .screen.active { display: block; animation: appear .22s ease-out; }
+    @keyframes appear { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    .hero, .card {
+      background: rgba(18, 29, 48, .94);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: clamp(22px, 5vw, 36px);
+      box-shadow: 0 18px 48px rgba(0,0,0,.18);
+    }
+    .eyebrow { color: var(--accent); text-transform: uppercase; font-weight: 800; font-size: 12px; letter-spacing: 1.5px; }
+    h1 { font-size: clamp(32px, 7vw, 52px); line-height: 1.15; letter-spacing: -1.7px; margin: 12px 0 16px; }
+    h2 { font-size: clamp(23px, 5vw, 30px); line-height: 1.35; letter-spacing: -.7px; margin: 12px 0; }
+    p { margin: 10px 0; color: var(--muted); }
+    .hero-visual {
+      display: flex; gap: 12px; align-items: center; justify-content: center;
+      margin: 28px 0; padding: 20px 12px; border-radius: 18px;
+      background: linear-gradient(130deg, #1d344c, #183b3b);
+    }
+    .bubble { border: 1px solid #46627a; border-radius: 15px; padding: 12px 14px; font-size: 13px; max-width: 44%; }
+    .bubble strong { display: block; color: var(--text); margin-bottom: 4px; }
+    .bubble span { color: var(--muted); }
+    .versus { color: var(--accent); font-weight: 900; }
+    .button {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      border: 0; border-radius: 13px; padding: 13px 18px; font-weight: 800;
+      background: var(--accent); color: #0b2527; transition: transform .12s, filter .12s;
+      text-decoration: none;
+    }
+    .button:hover { filter: brightness(1.05); }
+    .button:active { transform: scale(.985); }
+    .button.secondary { background: var(--panel-light); color: var(--text); border: 1px solid var(--border); }
+    .button:focus-visible, .option:focus-visible, a:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+    .button.full { width: 100%; margin-top: 18px; }
+    .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 18px; }
+    .feature { background: rgba(26,41,64,.7); border: 1px solid var(--border); padding: 14px; border-radius: 15px; }
+    .feature b { display: block; color: var(--text); font-size: 14px; }
+    .feature span { font-size: 12px; color: var(--muted); }
+    .progress-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+    .progress { height: 7px; background: #25344b; border-radius: 99px; overflow: hidden; margin-bottom: 24px; }
+    .progress-fill { height: 100%; width: 0%; background: var(--accent); transition: width .2s; }
+    .category { display: inline-block; border-radius: 999px; padding: 5px 10px; color: var(--accent); background: var(--accent-dark); font-size: 12px; font-weight: 800; }
+    .question { color: var(--text); font-size: 19px; font-weight: 750; margin: 18px 0 8px; }
+    .claim { background: #0d1727; border: 1px solid var(--border); border-radius: 16px; padding: 18px; margin: 18px 0; color: #e6edf8; font-size: 17px; }
+    .options { display: grid; gap: 10px; margin-top: 16px; }
+    .option {
+      width: 100%; text-align: left; color: var(--text); background: #17243a;
+      border: 1px solid var(--border); border-radius: 14px; padding: 15px;
+      display: flex; align-items: flex-start; gap: 12px; transition: border-color .15s, background .15s;
+    }
+    .option:hover:not(:disabled) { border-color: var(--accent); background: #1a3043; }
+    .option:disabled { cursor: default; }
+    .option .letter { flex: 0 0 28px; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 9px; background: #263750; font-weight: 800; font-size: 13px; }
+    .option.correct { border-color: var(--success); background: #15342e; }
+    .option.wrong { border-color: var(--danger); background: #3b252e; }
+    .feedback { display: none; margin-top: 18px; border-radius: 16px; padding: 18px; background: #0d1727; border: 1px solid var(--border); }
+    .feedback.show { display: block; }
+    .feedback h3 { margin: 0 0 8px; font-size: 18px; }
+    .feedback p { color: #d0daea; font-size: 14px; }
+    .feedback .source { font-size: 13px; margin-top: 12px; }
+    .feedback a { color: var(--accent); text-underline-offset: 3px; overflow-wrap: anywhere; }
+    .quiz-actions { display: flex; justify-content: flex-end; margin-top: 16px; }
+    .small-note { font-size: 12px; color: var(--muted); margin-top: 18px; }
+    .score-circle {
+      width: 132px; height: 132px; margin: 24px auto; border-radius: 50%;
+      display: grid; place-items: center; text-align: center;
+      border: 7px solid var(--accent); background: #102b31;
+    }
+    .score-circle strong { display: block; font-size: 34px; line-height: 1.1; color: var(--text); }
+    .score-circle span { color: var(--muted); font-size: 12px; }
+    .result-stats { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; margin: 22px 0; }
+    .stat { background: #0d1727; border: 1px solid var(--border); padding: 16px; border-radius: 15px; text-align: center; }
+    .stat strong { display: block; font-size: 24px; }
+    .stat span { color: var(--muted); font-size: 12px; }
+    .notice { border-left: 3px solid var(--accent); padding: 10px 14px; margin-top: 20px; background: rgba(140,224,207,.06); border-radius: 0 10px 10px 0; }
+    .notice p { font-size: 13px; margin: 0; }
+    footer { text-align: center; margin-top: 26px; color: #7f8da4; font-size: 12px; }
+    @media (max-width: 520px) {
+      .wrap { padding: 18px 13px 32px; }
+      header { margin-bottom: 18px; }
+      .tag { display: none; }
+      .features { grid-template-columns: 1fr; }
+      .feature { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+      .hero-visual { gap: 7px; }
+      .bubble { padding: 10px; font-size: 11px; }
+      .claim { font-size: 16px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand"><div class="brand-mark" aria-hidden="true">?</div><span>AI 거짓말 체험관</span></div>
+      <span class="tag">AI 리터러시 미니 퀴즈</span>
+    </header>
+
+    <main>
+      <section id="home" class="screen active">
+        <div class="hero">
+          <div class="eyebrow">AI hallucination lab</div>
+          <h1>그럴듯한 답변,<br>정말 사실일까요?</h1>
+          <p>AI는 자연스럽고 자신감 있는 문장으로 틀린 정보를 말할 수 있어요. 5개의 퀴즈를 풀며 사실을 확인하는 습관을 연습해 봐요.</p>
+          <div class="hero-visual" aria-label="AI 답변과 사실 확인을 비교하는 그림">
+            <div class="bubble"><strong>AI의 답변</strong><span>말은 그럴듯한데…</span></div>
+            <div class="versus">VS</div>
+            <div class="bubble"><strong>근거 확인</strong><span>출처가 있을까?</span></div>
+          </div>
+          <button class="button full" id="startButton">퀴즈 시작하기 <span aria-hidden="true">→</span></button>
+          <div class="features">
+            <div class="feature"><b>5개 문제</b><span>약 3분 소요</span></div>
+            <div class="feature"><b>정답 해설</b><span>근거를 함께 확인</span></div>
+            <div class="feature"><b>점수 확인</b><span>다시 도전 가능</span></div>
+          </div>
+          <div class="notice"><p><strong>알아두기:</strong> 이 체험관은 AI 환각을 학습하기 위한 교육용 예시예요. 퀴즈의 주장과 설명은 실제 자료로 다시 확인할 수 있도록 구성해야 해요.</p></div>
+        </div>
+      </section>
+
+      <section id="quiz" class="screen">
+        <div class="card">
+          <div class="progress-row"><span id="questionCount">문제 1 / 5</span><span id="scoreLive">현재 점수 0점</span></div>
+          <div class="progress" aria-label="퀴즈 진행 상황"><div class="progress-fill" id="progressFill"></div></div>
+          <span class="category" id="category">과학</span>
+          <div class="question" id="questionTitle">주장을 읽고 가장 적절한 답을 선택하세요.</div>
+          <div class="claim" id="claimText"></div>
+          <p id="instruction">이 주장에 대한 판단으로 가장 적절한 것은 무엇일까요?</p>
+          <div class="options" id="options"></div>
+          <div class="feedback" id="feedback" aria-live="polite">
+            <h3 id="feedbackTitle"></h3>
+            <p id="explanation"></p>
+            <p class="source" id="sourceText"></p>
+          </div>
+          <div class="quiz-actions"><button class="button" id="nextButton" hidden>다음 문제 →</button></div>
+          <p class="small-note">팁: 자신감 있는 문장인지보다, 확인할 수 있는 근거가 있는지 생각해 보세요.</p>
+        </div>
+      </section>
+
+      <section id="result" class="screen">
+        <div class="hero">
+          <div class="eyebrow">Quiz complete</div>
+          <h2 id="resultHeading">퀴즈를 완료했어요!</h2>
+          <p id="resultMessage">결과를 확인하고, 틀린 문제의 근거도 다시 살펴보세요.</p>
+          <div class="score-circle"><div><strong id="percentage">0%</strong><span>정답률</span></div></div>
+          <div class="result-stats">
+            <div class="stat"><strong id="correctCount">0 / 5</strong><span>맞힌 문제</span></div>
+            <div class="stat"><strong id="wrongCount">0개</strong><span>다시 살펴볼 문제</span></div>
+          </div>
+          <div class="notice"><p><strong>기억하세요.</strong> AI의 답변은 출발점일 뿐이에요. 중요한 정보는 신뢰할 수 있는 출처와 대조해 확인하는 것이 좋아요.</p></div>
+          <button class="button full" id="retryButton">다시 도전하기 ↻</button>
+          <button class="button secondary full" id="homeButton">처음 화면으로</button>
+        </div>
+      </section>
+    </main>
+    <footer>AI 거짓말 체험관 · 교육용 프로토타입</footer>
+  </div>
+
+  <script>
+    // 문제를 추가하거나 수정하려면 아래 QUESTIONS 배열을 편집하세요.
+    // sourceUrl에는 해당 설명을 실제로 뒷받침하는 공식 자료를 넣어야 합니다.
+    const QUESTIONS = [
+      {
+        category: "과학",
+        claim: "“금성은 태양계에서 표면 온도가 가장 높은 행성이다.”",
+        prompt: "이 주장은 사실일까요?",
+        options: ["사실이다", "거짓이다", "자료가 없어 판단할 수 없다"],
+        answer: 0,
+        explanation: "사실이에요. 금성은 두꺼운 이산화탄소 대기와 강한 온실 효과 때문에 수성보다도 표면 온도가 높아요. 다만 이 퀴즈는 실제 AI가 이 문장을 말했다는 뜻이 아니라, 사실 확인 연습을 위한 예시예요.",
+        sourceName: "NASA Solar System Exploration — Venus",
+        sourceUrl: "https://science.nasa.gov/venus/"
+      },
+      {
+        category: "과학",
+        claim: "“태양계에서 가장 큰 행성은 지구다.”",
+        prompt: "이 주장은 사실일까요?",
+        options: ["사실이다", "거짓이다", "지구와 목성은 크기가 같다"],
+        answer: 1,
+        explanation: "거짓이에요. 태양계에서 가장 큰 행성은 목성이에요. 간단한 사실이라도 AI 답변을 그대로 받아들이지 말고 공신력 있는 자료에서 확인하는 태도가 중요해요.",
+        sourceName: "NASA Solar System Exploration — Jupiter",
+        sourceUrl: "https://science.nasa.gov/jupiter/"
+      },
+      {
+        category: "정보 검증",
+        claim: "“AI가 매우 자신 있게 말했으므로, 그 답변은 사실일 가능성이 높다.”",
+        prompt: "AI 답변의 신뢰도를 판단하는 방법으로 적절할까요?",
+        options: ["적절하다. 자신감이 정확성을 보장한다", "적절하지 않다. 근거와 출처를 확인해야 한다", "문장이 길면 사실이다"],
+        answer: 1,
+        explanation: "적절하지 않아요. 유창하고 단정적인 문체가 정확성을 보장하지는 않아요. 답변의 근거, 출처, 다른 신뢰할 수 있는 자료와의 일치 여부를 확인해야 해요.",
+        sourceName: "Google — Learn about generative AI",
+        sourceUrl: "https://ai.google/learn/"
+      },
+      {
+        category: "출처 확인",
+        claim: "“AI가 존재하지 않는 논문 제목과 저자를 실제 연구처럼 제시했다.”",
+        prompt: "이런 오류는 AI 환각의 사례가 될 수 있을까요?",
+        options: ["그렇다. 확인되지 않는 출처를 만들어 낼 수 있다", "아니다. 논문 형식이면 모두 실재한다", "저자 이름이 있으면 검증할 필요가 없다"],
+        answer: 0,
+        explanation: "그렇습니다. 생성형 AI는 실제로 존재하지 않거나 세부 정보가 틀린 자료를 그럴듯하게 제시할 수 있어요. 논문 제목과 저자, 학술지, DOI 등을 실제 학술 데이터베이스에서 확인해야 해요.",
+        sourceName: "Google Scholar — 학술 자료 검색",
+        sourceUrl: "https://scholar.google.com/"
+      },
+      {
+        category: "비판적 사고",
+        claim: "“AI의 답변이 중요한 의사결정에 사용될 때, 다른 신뢰할 수 있는 자료로 교차 확인하는 것이 좋다.”",
+        prompt: "이 행동은 왜 중요할까요?",
+        options: ["AI는 언제나 틀리기 때문이다", "교차 확인은 오류를 발견할 가능성을 높여 주기 때문이다", "출처가 많으면 무조건 참이기 때문이다"],
+        answer: 1,
+        explanation: "교차 확인은 오류를 발견할 가능성을 높여 줘요. 그렇다고 출처를 여러 개 모으기만 하면 충분한 건 아니에요. 출처의 신뢰성과 독립성, 해당 주장을 실제로 뒷받침하는지까지 살펴야 해요.",
+        sourceName: "Google Scholar — 학술 자료 검색",
+        sourceUrl: "https://scholar.google.com/"
+      }
+    ];
+
+    const $ = (id) => document.getElementById(id);
+    let currentQuestion = 0;
+    let score = 0;
+    let answered = false;
+    let answers = [];
+
+    function showScreen(screenId) {
+      document.querySelectorAll(".screen").forEach(screen => screen.classList.remove("active"));
+      $(screenId).classList.add("active");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function startQuiz() {
+      currentQuestion = 0;
+      score = 0;
+      answered = false;
+      answers = [];
+      showScreen("quiz");
+      renderQuestion();
+    }
+
+    function renderQuestion() {
+      const q = QUESTIONS[currentQuestion];
+      answered = false;
+      $("questionCount").textContent = `문제 ${currentQuestion + 1} / ${QUESTIONS.length}`;
+      $("scoreLive").textContent = `현재 점수 ${score}점`;
+      $("progressFill").style.width = `${(currentQuestion / QUESTIONS.length) * 100}%`;
+      $("category").textContent = q.category;
+      $("questionTitle").textContent = q.prompt;
+      $("claimText").textContent = q.claim;
+      $("options").replaceChildren();
+      $("feedback").classList.remove("show");
+      $("nextButton").hidden = true;
+
+      q.options.forEach((option, index) => {
+        const button = document.createElement("button");
+        button.className = "option";
+        button.type = "button";
+        const letter = document.createElement("span");
+        letter.className = "letter";
+        letter.textContent = String.fromCharCode(65 + index);
+        const text = document.createElement("span");
+        text.textContent = option;
+        button.append(letter, text);
+        button.addEventListener("click", () => chooseAnswer(index));
+        $("options").append(button);
+      });
+    }
+
+    function chooseAnswer(selectedIndex) {
+      if (answered) return;
+      answered = true;
+      const q = QUESTIONS[currentQuestion];
+      const isCorrect = selectedIndex === q.answer;
+      if (isCorrect) score++;
+      answers.push({ selectedIndex, correct: isCorrect });
+
+      [...$("options").children].forEach((button, index) => {
+        button.disabled = true;
+        if (index === q.answer) button.classList.add("correct");
+        if (index === selectedIndex && !isCorrect) button.classList.add("wrong");
+      });
+
+      $("scoreLive").textContent = `현재 점수 ${score}점`;
+      $("progressFill").style.width = `${((currentQuestion + 1) / QUESTIONS.length) * 100}%`;
+      $("feedbackTitle").textContent = isCorrect ? "정답이에요!" : "정답을 확인해 봐요.";
+      $("feedbackTitle").style.color = isCorrect ? "var(--success)" : "var(--danger)";
+      $("explanation").textContent = q.explanation;
+      $("sourceText").replaceChildren();
+      const prefix = document.createElement("strong");
+      prefix.textContent = "참고 자료: ";
+      const link = document.createElement("a");
+      link.href = q.sourceUrl;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = q.sourceName;
+      $("sourceText").append(prefix, link);
+      $("feedback").classList.add("show");
+      $("nextButton").textContent = currentQuestion === QUESTIONS.length - 1 ? "결과 보기 →" : "다음 문제 →";
+      $("nextButton").hidden = false;
+      $("nextButton").focus();
+    }
+
+    function nextQuestion() {
+      if (!answered) return;
+      if (currentQuestion < QUESTIONS.length - 1) {
+        currentQuestion++;
+        renderQuestion();
+        $("questionTitle").focus?.();
+      } else {
+        showResults();
+      }
+    }
+
+    function showResults() {
+      const total = QUESTIONS.length;
+      const percent = Math.round((score / total) * 100);
+      $("percentage").textContent = `${percent}%`;
+      $("correctCount").textContent = `${score} / ${total}`;
+      $("wrongCount").textContent = `${total - score}개`;
+      $("resultHeading").textContent = percent === 100 ? "완벽해요!" : percent >= 60 ? "퀴즈를 완료했어요!" : "좋아요, 이제부터 배워 봐요!";
+      $("resultMessage").textContent = percent >= 80
+        ? "사실과 근거를 구분하는 연습을 잘했어요. 출처도 꼼꼼히 확인해 보세요."
+        : "점수보다 중요한 건 틀린 이유를 이해하는 거예요. 해설의 출처를 확인하고 다시 도전해 보세요.";
+      showScreen("result");
+    }
+
+    $("startButton").addEventListener("click", startQuiz);
+    $("nextButton").addEventListener("click", nextQuestion);
+    $("retryButton").addEventListener("click", startQuiz);
+    $("homeButton").addEventListener("click", () => showScreen("home"));
+  </script>
+</body>
+</html>
